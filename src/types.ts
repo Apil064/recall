@@ -6,6 +6,12 @@ export interface Flashcard {
   status: "new" | "young" | "mature";
   difficulty?: "easy" | "good" | "hard" | "again";
   dueDate?: string;
+  
+  // SM-2 Spaced Repetition Scheduling Parameters
+  easinessFactor?: number;
+  interval?: number;
+  repetitions?: number;
+  lastReviewed?: string;
 }
 
 export interface Deck {

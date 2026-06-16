@@ -6,9 +6,11 @@ interface SettingsProps {
   user: UserProfile;
   onUpdateUser: (updated: UserProfile) => void;
   onLogout: () => void;
+  themeMode: "light" | "dark";
+  onThemeChange: (theme: "light" | "dark") => void;
 }
 
-export default function Settings({ user, onUpdateUser, onLogout }: SettingsProps) {
+export default function Settings({ user, onUpdateUser, onLogout, themeMode, onThemeChange }: SettingsProps) {
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio);
   const [toast, setToast] = useState("");
@@ -104,6 +106,40 @@ export default function Settings({ user, onUpdateUser, onLogout }: SettingsProps
             </button>
           </div>
         </form>
+      </section>
+
+      {/* Theme Appearance Block */}
+      <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] space-y-4 text-left">
+        <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest border-b border-gray-50 pb-2">Appearance theme</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <button 
+            type="button"
+            onClick={() => onThemeChange("light")}
+            className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+              themeMode === "light"
+                ? "border-[#004ac6] bg-blue-50/20 text-[#004ac6]"
+                : "border-transparent bg-[#faf8ff] hover:border-gray-200 text-[#434655]"
+            }`}
+          >
+            <div className="w-full h-11 flex items-center justify-center rounded-lg bg-white border border-gray-100">
+              <span className="text-[#004ac6] font-bold text-xs uppercase tracking-widest flex items-center gap-1">🔆 Light Mode</span>
+            </div>
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => onThemeChange("dark")}
+            className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+              themeMode === "dark"
+                ? "border-[#004ac6] bg-slate-800/10 text-[#004ac6]"
+                : "border-transparent bg-[#faf8ff] hover:border-gray-200 text-[#434655]"
+            }`}
+          >
+            <div className="w-full h-11 flex items-center justify-center rounded-lg bg-[#2e3039] border border-gray-800">
+              <span className="text-[#b4c5ff] font-bold text-xs uppercase tracking-widest flex items-center gap-1">🌙 Dark Mode</span>
+            </div>
+          </button>
+        </div>
       </section>
 
       {/* Cloud Integration toggles (Screen 5: Google, etc) */}

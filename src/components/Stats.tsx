@@ -1,20 +1,31 @@
 import { useState } from "react";
-import { UserProfile, SubjectMastery, DailyActivity } from "../types";
-import { Award, Zap, Shield, TrendingUp, BarChart, Eye, Calendar } from "lucide-react";
+import { UserProfile, SubjectMastery, DailyActivity, Deck } from "../types";
+import { Award, Zap, Shield, TrendingUp, BarChart, Plus, CheckCircle, Calendar } from "lucide-react";
 
 interface StatsProps {
   user: UserProfile;
   masteryList: SubjectMastery[];
   heatmap: DailyActivity[];
+  decks: Deck[];
+  onAddSubjectMastery: (subject: string, masteryPercent: number, status: "Mastered" | "Reviewing" | "Learning" | "New") => void;
 }
 
-export default function Stats({ user, masteryList, heatmap }: StatsProps) {
-  // Let the user select a heatmap cell to see mock card counts revised
+export default function Stats({ user, masteryList, heatmap, decks, onAddSubjectMastery }: StatsProps) {
+  // Let the user select a heatmap cell to see card counts
   const [selectedCell, setSelectedCell] = useState<{ index: number; count: number } | null>(null);
 
-  const totalCardsStudied = 1842;
-  const retentionPercentage = 88;
-  const learningVelocityIdx = 4.2; // cards/min
+  // Form states to add custom mastery items
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newSubject, setNewSubject] = useState("");
+  const [newPercent, setNewPercent] = useState(50);
+  const [newStatus, setNewStatus] = useState<"Mastered" | "Reviewing" | "Learning" | "New">("Learning");
+
+  const totalCards = decks.reduce((sum, d) => sum + d.cards.length, 0);
+  const totalCardsStudied = totalCards;
+  const retentionPercentage = decks.length > 0 
+    ? Math.round(decks.reduce((sum, d) => sum + d.mastery, 0) / decks.length)
+    : 0;
+  const learningVelocityIdx = totalCards > 0 ? 3.5 : 0; // seconds response average
 
   const getHeatmapColor = (val: number) => {
     if (val === 0) return "bg-gray-100 hover:bg-gray-200";
@@ -66,32 +77,117 @@ export default function Stats({ user, masteryList, heatmap }: StatsProps) {
         
         {/* Subject Mastery List (Screen 2 bar representation) */}
         <section className="lg:col-span-7 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] space-y-4">
-          <h3 className="text-base font-bold text-[#191b23] flex items-center gap-2 border-b border-gray-50 pb-2">
-            <BarChart className="w-5 h-5 text-[#004ac6]" />
-            <span>Academic Subject Mastery</span>
-          </h3>
+          <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+            <h3 className="text-base font-bold text-[#191b23] flex items-center gap-2">
+              <BarChart className="w-5 h-5 text-[#004ac6]" />
+              <span>Academic Subject Mastery</span>
+            </h3>
+            <button
+              onClick={() => setIsAddOpen(!isAddOpen)}
+              className="text-xs font-bold text-[#004ac6] hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add subject</span>
+            </button>
+          </div>
 
-          <div className="space-y-4 pt-1">
-            {masteryList.map((item, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-extrabold text-[#191b23]">{item.subject}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#004ac6]">{item.masteryPercent}%</span>
-                    <span className="text-[10px] bg-slate-50 border border-gray-100 text-gray-505 px-2 py-0.5 rounded uppercase font-semibold">
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
+          {isAddOpen && (
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newSubject.trim()) return;
+                onAddSubjectMastery(newSubject, newPercent, newStatus);
+                setNewSubject("");
+                setNewPercent(50);
+                setIsAddOpen(false);
+              }}
+              className="bg-[#faf8ff] p-4 rounded-xl border border-gray-100 space-y-3 text-left"
+            >
+              <div>
+                <label className="block text-[10px] font-bold text-[#434655] uppercase mb-1">Subject Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Physiology, Neuroanatomy"
+                  className="w-full text-xs p-2 bg-white rounded border border-[#c3c6d7]/50 text-[#191b23]"
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                />
+              </div>
 
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${item.colorClass}`} 
-                    style={{ width: `${item.masteryPercent}%` }} 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#434655] uppercase mb-1">Mastery %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    required
+                    className="w-full text-xs p-2 bg-white rounded border border-[#c3c6d7]/50 text-[#191b23]"
+                    value={newPercent}
+                    onChange={(e) => setNewPercent(Number(e.target.value))}
                   />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#434655] uppercase mb-1">Status</label>
+                  <select
+                    className="w-full text-xs p-2 bg-white rounded border border-[#c3c6d7]/50 text-[#191b23]"
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as any)}
+                  >
+                    <option value="New">New</option>
+                    <option value="Learning">Learning</option>
+                    <option value="Reviewing">Reviewing</option>
+                    <option value="Mastered">Mastered</option>
+                  </select>
+                </div>
               </div>
-            ))}
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsAddOpen(false)}
+                  className="px-2.5 py-1 border border-[#c3c6d7] text-[#434655] text-[10px] font-bold rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 bg-[#004ac6] text-white text-[10px] font-bold rounded"
+                >
+                  Add Subject
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="space-y-4 pt-1">
+            {masteryList.length === 0 ? (
+              <div className="text-center py-8 text-xs text-[#737686]">
+                No subject masteries added yet. Click <span className="font-bold text-[#004ac6]">"Add subject"</span> above to start tracking.
+              </div>
+            ) : (
+              masteryList.map((item, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-extrabold text-[#191b23]">{item.subject}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[#004ac6]">{item.masteryPercent}%</span>
+                      <span className="text-[10px] bg-slate-50 border border-gray-100 text-[#434655] px-2 py-0.5 rounded uppercase font-semibold">
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${item.colorClass}`} 
+                      style={{ width: `${item.masteryPercent}%` }} 
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
 

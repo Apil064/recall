@@ -1,9 +1,82 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Beautiful native class indicators for dark mode overlays */
+.dark .bg-white,
+.dark .bg-surface,
+.dark .bg-surface-container-lowest,
+.dark .bg-surface-container-low,
+.dark .bg-slate-50,
+.dark .bg-gray-50,
+.dark .bg-neutral-50,
+.dark .bg-[#faf8ff] {
+  background-color: #161823 !important;
+}
+
+.dark .bg-surface-container-low,
+.dark .bg-surface-container-high,
+.dark .bg-[#f3f3fe],
+.dark .bg-[#f3f2fe],
+.dark .bg-[#f5f3ff],
+.dark .bg-gray-100 {
+  background-color: #212533 !important;
+}
+
+.dark .glass-card,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90 {
+  background-color: rgba(22, 24, 35, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.dark .text-[#191b23],
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-slate-800 {
+  color: #f1f3f7 !important;
+}
+
+.dark .text-[#434655],
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-slate-600 {
+  color: #cbcdd7 !important;
+}
+
+.dark .text-gray-400,
+.dark .text-[#737686],
+.dark .text-slate-400 {
+  color: #8c8f9f !important;
+}
+
+.dark .border-gray-100,
+.dark .border-[#c3c6d7]\/30,
+.dark .border-[#c3c6d7]\/20,
+.dark .border-black\/5,
+.dark .border-gray-200 {
+  border-color: #31354d !important;
+}
+
+.dark .text-primary,
+.dark .text-[#004ac6],
+.dark .text-[#2563eb] {
+  color: #558bff !important;
+}
+
+.dark .scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.dark .scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @layer utilities {

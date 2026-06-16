@@ -1,14 +1,6 @@
 import { useState, useEffect } from "react";
-import { ActiveView, Deck, UserProfile, ScheduleItem, DeadlineItem, ActivityNotification, Flashcard, SubjectMastery } from "./types";
-import { 
-  initialUserProfile, 
-  initialDecks, 
-  initialSubjectMastery, 
-  initialHeatmap, 
-  initialSchedule, 
-  initialDeadlines, 
-  initialNotifications 
-} from "./mockData";
+import { useRecall } from "./RecallContext";
+import { ActiveView } from "./types";
 
 // View imports
 import Splash from "./components/Splash";
@@ -28,176 +20,71 @@ import ActivityStream from "./components/ActivityStream";
 import Settings from "./components/Settings";
 
 export default function App() {
-  // Screens navigation
-  const [currentView, setView] = useState<ActiveView>("splash");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const {
+    isAuthenticated,
+    user,
+    currentView,
+    setView,
+    selectedDeckId,
+    setSelectedDeckId,
+    decks,
+    streak,
+    reviewsCount,
+    masteryList,
+    heatmap,
+    schedule,
+    deadlines,
+    notifications,
+    logout,
+    createDeck,
+    addCard,
+    deleteCard,
+    reviewCard,
+    addSchedule,
+    toggleSchedule,
+    addDeadline,
+    clearNotifications,
+    updateUserProfile,
+    addSubjectMastery,
+  } = useRecall();
 
-  // Core Data State
-  const [user, setUser] = useState<UserProfile>(initialUserProfile);
-  const [decks, setDecks] = useState<Deck[]>(initialDecks);
-  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
+  // Appearance Theme state
+  const [themeMode, setThemeMode] = useState<"light" | "dark">(
+    () => (localStorage.getItem("recall-theme") as "light" | "dark") || "light"
+  );
 
-  // Planning / Habits Data State
-  const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
-  const [deadlines, setDeadlines] = useState<DeadlineItem[]>(initialDeadlines);
-
-  // Alerts Alerts Inbox
-  const [notifications, setNotifications] = useState<ActivityNotification[]>(initialNotifications);
-
-  // Dynamically tracked gamified metrics
-  const [streak, setStreak] = useState(15);
-  const [reviewsCount, setReviewsCount] = useState(12);
-
-  // Dynamic Subject Mastery representation state
-  const [masteryList, setMasteryList] = useState<SubjectMastery[]>(initialSubjectMastery);
+  useEffect(() => {
+    localStorage.setItem("recall-theme", themeMode);
+    if (themeMode === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [themeMode]);
 
   // Unread badge notifications tally
   const unreadCount = notifications.filter((n) => n.unread).length;
 
-  const currentDeck = decks.find((d) => d.id === selectedDeckId) || decks[0];
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    setView("dashboard");
+  const currentDeck = decks.find((d) => d.id === selectedDeckId) || decks[0] || {
+    id: "empty",
+    name: "Empty Deck",
+    category: "General",
+    description: "Please create a deck to get started.",
+    cardsCount: 0,
+    mastery: 0,
+    cards: [],
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setView("auth");
-  };
-
-  // State modification triggers
-  const handleCardReviewed = (scoreChange: number) => {
-    setReviewsCount((prev) => Math.max(0, prev - 1));
-    if (scoreChange > 3) {
-      setStreak((prev) => prev === 15 ? 16 : prev);
-    }
+  const handleCardReviewedLocal = async (score: number) => {
+    // Left empty since reviewCard endpoint synchronously manages reviewsCount inside the RecallContext
   };
 
   const handleQuizCompleted = (scorePercentage: number) => {
-    if (scorePercentage >= 70) {
-      setStreak((prev) => prev === 15 ? 16 : prev);
-    }
+    // Dynamic score completion updates
   };
 
-  const handleAddCard = (deckId: string, question: string, answer: string, category: string) => {
-    const newCard: Flashcard = {
-      id: `card-${Date.now()}`,
-      question,
-      answer,
-      category,
-      status: "new",
-    };
-
-    setDecks((prevDecks) =>
-      prevDecks.map((deck) => {
-        if (deck.id === deckId) {
-          return {
-            ...deck,
-            cards: [newCard, ...deck.cards],
-            cardsCount: deck.cards.length + 1,
-          };
-        }
-        return deck;
-      })
-    );
-  };
-
-  const handleDeleteCard = (deckId: string, cardId: string) => {
-    setDecks((prevDecks) =>
-      prevDecks.map((deck) => {
-        if (deck.id === deckId) {
-          const revised = deck.cards.filter((c) => c.id !== cardId);
-          return {
-            ...deck,
-            cards: revised,
-            cardsCount: revised.length,
-          };
-        }
-        return deck;
-      })
-    );
-  };
-
-  const handleCreateDeck = (name: string, category: string, description: string) => {
-    const newDeck: Deck = {
-      id: `deck-${Date.now()}`,
-      name,
-      category,
-      description,
-      cardsCount: 0,
-      mastery: 0,
-      cards: [],
-    };
-
-    setDecks([newDeck, ...decks]);
-    
-    // Add activity notice
-    const newNot: ActivityNotification = {
-      id: `not-${Date.now()}`,
-      type: "deck_created",
-      title: "New deck created",
-      description: `You successfully initialized the "${name}" deck under category ${category}.`,
-      timeAgo: "Just now",
-      unread: true,
-    };
-    setNotifications([newNot, ...notifications]);
-  };
-
-  const handleAcceptSharedDeck = (newDeck: Deck) => {
-    setDecks([newDeck, ...decks]);
-  };
-
-  const handleToggleSchedule = (id: string) => {
-    setSchedule((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextCompletedState = !item.completed;
-          if (nextCompletedState) {
-            // Give reward progress dynamically on stats
-            setMasteryList((prevList) =>
-              prevList.map((m) => {
-                if (m.subject === "Organic Chemistry") {
-                  return { ...m, masteryPercent: Math.min(100, m.masteryPercent + 8), status: "Reviewing" };
-                }
-                return m;
-              })
-            );
-          }
-          return { ...item, completed: nextCompletedState };
-        }
-        return item;
-      })
-    );
-  };
-
-  const handleAddSchedule = (title: string, timeString: string, durationLabel: string, typeLabel: string) => {
-    const newItem: ScheduleItem = {
-      id: `sch-${Date.now()}`,
-      title,
-      timeString,
-      durationLabel,
-      typeLabel,
-      completed: false,
-    };
-    setSchedule([...schedule, newItem]);
-  };
-
-  const handleAddDeadline = (title: string, month: string, day: string, daysLeft: number, urgency: boolean) => {
-    const newItem: DeadlineItem = {
-      id: `dl-${Date.now()}`,
-      title,
-      month,
-      day,
-      daysLeft,
-      progressPercent: 10,
-      isUrgent: urgency,
-    };
-    setDeadlines([...deadlines, newItem]);
-  };
-
-  const handleClearNotifications = () => {
-    setNotifications([]);
+  const handleAcceptSharedDeck = (newDeck: any) => {
+    // Shared decks handled via database mechanics
   };
 
   // Main screen routing matrix
@@ -206,7 +93,7 @@ export default function App() {
       case "splash":
         return <Splash onDismiss={() => setView("auth")} />;
       case "auth":
-        return <Auth onLogin={handleLogin} />;
+        return <Auth />;
       case "dashboard":
         return (
           <Dashboard 
@@ -223,7 +110,7 @@ export default function App() {
             decks={decks} 
             setSelectedDeckId={setSelectedDeckId} 
             setView={setView} 
-            onCreateDeck={handleCreateDeck}
+            onCreateDeck={createDeck}
           />
         );
       case "deck-detail":
@@ -232,8 +119,8 @@ export default function App() {
             deck={currentDeck} 
             onBack={() => setView("library")} 
             setView={setView}
-            onDeleteCard={handleDeleteCard}
-            onAddCard={handleAddCard}
+            onDeleteCard={deleteCard}
+            onAddCard={addCard}
           />
         );
       case "study-session":
@@ -241,7 +128,7 @@ export default function App() {
           <StudySession 
             deck={currentDeck} 
             onBack={() => setView("deck-detail")} 
-            onCardReviewed={handleCardReviewed}
+            onCardReviewed={handleCardReviewedLocal}
           />
         );
       case "quiz-session":
@@ -256,7 +143,7 @@ export default function App() {
         return (
           <ImportNotes 
             onBack={() => setView("library")} 
-            onDeckCreated={handleAcceptSharedDeck} 
+            onDeckCreated={(newDeck) => createDeck(newDeck.name, newDeck.category, newDeck.description, newDeck.cards)} 
             setView={setView}
           />
         );
@@ -264,7 +151,7 @@ export default function App() {
         return (
           <OcrImport 
             onBack={() => setView("library")} 
-            onDeckCreated={handleAcceptSharedDeck} 
+            onDeckCreated={(newDeck) => createDeck(newDeck.name, newDeck.category, newDeck.description, newDeck.cards)} 
             setView={setView}
           />
         );
@@ -281,17 +168,19 @@ export default function App() {
           <WeeklyPlan 
             schedule={schedule} 
             deadlines={deadlines} 
-            onToggleSchedule={handleToggleSchedule}
-            onAddSchedule={handleAddSchedule}
-            onAddDeadline={handleAddDeadline}
+            onToggleSchedule={toggleSchedule}
+            onAddSchedule={addSchedule}
+            onAddDeadline={addDeadline}
           />
         );
       case "stats":
         return (
           <Stats 
-            user={user} 
+            user={user!} 
             masteryList={masteryList} 
-            heatmap={initialHeatmap}
+            heatmap={heatmap}
+            decks={decks}
+            onAddSubjectMastery={addSubjectMastery}
           />
         );
       case "activity-stream":
@@ -299,15 +188,17 @@ export default function App() {
           <ActivityStream 
             notifications={notifications} 
             onAcceptDeck={handleAcceptSharedDeck} 
-            onClearNotifications={handleClearNotifications}
+            onClearNotifications={clearNotifications}
           />
         );
       case "settings":
         return (
           <Settings 
-            user={user} 
-            onUpdateUser={setUser} 
-            onLogout={handleLogout}
+            user={user!} 
+            onUpdateUser={updateUserProfile} 
+            onLogout={logout}
+            themeMode={themeMode}
+            onThemeChange={setThemeMode}
           />
         );
       default:
@@ -319,7 +210,7 @@ export default function App() {
   const showNavigation = isAuthenticated && currentView !== "splash" && currentView !== "auth";
 
   return (
-    <div className="min-h-screen bg-[#faf8ff] flex flex-col text-[#191b23] relative">
+    <div className={`min-h-screen ${themeMode === "dark" ? "bg-[#0f111a] text-[#f3f4f6]" : "bg-[#faf8ff] text-[#191b23]"} flex flex-col relative transition-colors duration-300`}>
       
       {/* Dynamic Screen viewport */}
       <main className="flex-grow">

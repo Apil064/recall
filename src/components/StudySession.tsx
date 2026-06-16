@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Check, RotateCcw, AlertTriangle, Sparkles, Award } from "lucide-react";
+import { useRecall } from "../RecallContext";
 import { Deck, Flashcard } from "../types";
 
 interface StudySessionProps {
@@ -9,10 +10,12 @@ interface StudySessionProps {
 }
 
 export default function StudySession({ deck, onBack, onCardReviewed }: StudySessionProps) {
+  const { reviewCard } = useRecall();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [scoreAccumulator, setScoreAccumulator] = useState(0);
+
 
   const cards = deck.cards;
   const totalCards = cards.length;
@@ -41,13 +44,15 @@ export default function StudySession({ deck, onBack, onCardReviewed }: StudySess
 
   const handleRating = (difficulty: "again" | "hard" | "good" | "easy") => {
     let score = 2; // general default increments
-    if (difficulty === "again") score = 0;
-    if (difficulty === "hard") score = 1;
+    if (difficulty === "again") score = 1;
+    if (difficulty === "hard") score = 3;
     if (difficulty === "good") score = 4;
-    if (difficulty === "easy") score = 7;
+    if (difficulty === "easy") score = 5;
 
     setScoreAccumulator((prev) => prev + score);
-    onCardReviewed(score);
+    
+    // Invoke real backend SM-2 algorithm save
+    reviewCard(deck.id, currentCard.id, difficulty);
 
     setIsFlipped(false);
     setTimeout(() => {
