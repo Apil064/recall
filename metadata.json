@@ -1,0 +1,11 @@
+{
+  "name": "Recall",
+  "description": "An AI-assisted study and active recall system with flashcards, mock quizzes, voice recall, and note processors.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
